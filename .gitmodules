@@ -9,4 +9,4 @@
 	url = https://github.com/ansible/ansible-modules-core
 [submodule "v1/ansible/modules/extras"]
 	path = v1/ansible/modules/extras
-	url = https://github.com/ansible/ansible-modules-extras
+	url = https://github.com/mapennell/ansible-modules-extras
