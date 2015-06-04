@@ -159,11 +159,11 @@ def main():
 
     module = AnsibleModule(
         argument_spec=argument_spec,
-        supports_check_mode=False
+        supports_check_mode=False,
+        validate_certs=False
     )
 
     host = module.params['host']
-    partition = module.params['partition']
     username = module.params['username']
     password = module.params['password']
     state = module.params['state']
@@ -178,42 +178,34 @@ def main():
 
     axapi_base_url = 'https://%s/services/rest/V2.1/?format=json' % host
     session_url = axapi_authenticate(module, axapi_base_url, username, password)
-    axapi_partition(module, axapi_base_url, partition)
 
     # validate the ports data structure
     validate_ports(module, slb_server_ports)
 
     json_post = {
         'server': {
-            'name': slb_server,
+            'name': slb_server, 
+            'host': slb_server_ip, 
+            'status': axapi_enabled_disabled(slb_server_status),
+            'port_list': slb_server_ports,
         }
     }
-
-    # add optional module parameters
-    if slb_server_ip:
-        json_post['server']['host'] = slb_server_ip
-
-    if slb_server_ports:
-        json_post['server']['port_list'] = slb_server_ports
-
-    if slb_server_status:
-        json_post['server']['status'] = axapi_enabled_disabled(slb_server_status)
 
     slb_server_data = axapi_call(module, session_url + '&method=slb.server.search', json.dumps({'name': slb_server}))
     slb_server_exists = not axapi_failure(slb_server_data)
 
     changed = False
     if state == 'present':
-        if not slb_server_exists:
-            if not slb_server_ip:
-                module.fail_json(msg='you must specify an IP address when creating a server')
+        if not slb_server_ip:
+            module.fail_json(msg='you must specify an IP address when creating a server')
 
+        if not slb_server_exists:
             result = axapi_call(module, session_url + '&method=slb.server.create', json.dumps(json_post))
             if axapi_failure(result):
                 module.fail_json(msg="failed to create the server: %s" % result['response']['err']['msg'])
             changed = True
         else:
-            def port_needs_update(src_ports, dst_ports):
+            def needs_update(src_ports, dst_ports):
                 '''
                 Checks to determine if the port definitions of the src_ports
                 array are in or different from those in dst_ports. If there is
@@ -236,24 +228,12 @@ def main():
                 # every port from the src exists in the dst, and none of them were different
                 return False
 
-            def status_needs_update(current_status, new_status):
-                '''
-                Check to determine if we want to change the status of a server.
-                If there is a difference between the current status of the server and
-                the desired status, return true, otherwise false.
-                '''
-                if current_status != new_status:
-                    return True
-                return False
-
             defined_ports = slb_server_data.get('server', {}).get('port_list', [])
-            current_status = slb_server_data.get('server', {}).get('status')
 
-            # we check for a needed update several ways
-            # - in case ports are missing from the ones specified by the user
-            # - in case ports are missing from those on the device
-            # - in case we are change the status of a server
-            if port_needs_update(defined_ports, slb_server_ports) or port_needs_update(slb_server_ports, defined_ports) or status_needs_update(current_status, axapi_enabled_disabled(slb_server_status)):
+            # we check for a needed update both ways, in case ports
+            # are missing from either the ones specified by the user
+            # or from those on the device
+            if needs_update(defined_ports, slb_server_ports) or needs_update(slb_server_ports, defined_ports):
                 result = axapi_call(module, session_url + '&method=slb.server.update', json.dumps(json_post))
                 if axapi_failure(result):
                     module.fail_json(msg="failed to update the server: %s" % result['response']['err']['msg'])
@@ -270,10 +250,10 @@ def main():
             result = axapi_call(module, session_url + '&method=slb.server.delete', json.dumps({'name': slb_server}))
             changed = True
         else:
-            result = dict(msg="the server was not present")
+            result = dict(msg="the  server was not present")
 
-    # if the config has changed, or we want to force a save, save the config unless otherwise requested
-    if changed or write_config:
+    # if the config has changed, save the config unless otherwise requested
+    if changed and write_config:
         write_result = axapi_call(module, session_url + '&method=system.action.write_memory')
         if axapi_failure(write_result):
             module.fail_json(msg="failed to save the configuration: %s" % write_result['response']['err']['msg'])
