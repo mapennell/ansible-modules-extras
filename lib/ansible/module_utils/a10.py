@@ -42,7 +42,7 @@ AXAPI_VPORT_PROTOCOLS = {
 def a10_argument_spec():
     return dict(
         host=dict(type='str', required=True),
-        partition=dict(type='str', required=True, default='shared'),
+        partition=dict(type='str', default='shared'),
         username=dict(type='str', aliases=['user', 'admin'], required=True),
         password=dict(type='str', aliases=['pass', 'pwd'], required=True, no_log=True),
         write_config=dict(type='bool', default=False)
