@@ -90,7 +90,7 @@ def axapi_partition(module, base_url, active_partition):
     result = axapi_call(module, url)
     if axapi_failure(result):
         return module.fail_json(msg=result['response']['err']['msg'])
-    return True
+    return active_partition
 
 def axapi_enabled_disabled(flag):
     '''
