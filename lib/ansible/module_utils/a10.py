@@ -42,7 +42,7 @@ AXAPI_VPORT_PROTOCOLS = {
 def a10_argument_spec():
     return dict(
         host=dict(type='str', required=True),
-        partition=dict(type='str', default='shared'),
+        partition=dict(type='str'),
         username=dict(type='str', aliases=['user', 'admin'], required=True),
         password=dict(type='str', aliases=['pass', 'pwd'], required=True, no_log=True),
         write_config=dict(type='bool', default=False)
@@ -90,7 +90,7 @@ def axapi_partition(module, session_url, active_partition ):
     result = axapi_call(module, url)
     if axapi_failure(result):
         return module.fail_json(msg=result['response']['err']['msg'])
-    return True
+    return active_partition
 
 def axapi_enabled_disabled(flag):
     '''
