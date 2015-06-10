@@ -178,7 +178,7 @@ def main():
 
     axapi_base_url = 'https://%s/services/rest/V2.1/?format=json' % host
     session_url = axapi_authenticate(module, axapi_base_url, username, password)
-    axapi_partition(module, axapi_base_url, partition)
+    axapi_partition(module, session_url, partition)
 
     # validate the ports data structure
     validate_ports(module, slb_server_ports)
