@@ -85,8 +85,8 @@ def axapi_authenticate(module, base_url, username, password):
     sessid = result['session_id']
     return base_url + '&session_id=' + sessid
 
-def axapi_partition(module, base_url, active_partition):
-    url = '%s&method=system.partition.active&name=%s' % (base_url, active_partition)
+def axapi_partition(module, session_url, active_partition ):
+    url = session_url + '&method=system.partition.active&name=%s' % (active_partition)
     result = axapi_call(module, url)
     if axapi_failure(result):
         return module.fail_json(msg=result['response']['err']['msg'])
