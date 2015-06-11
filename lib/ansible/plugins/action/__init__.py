@@ -67,7 +67,7 @@ class ActionBase:
 
         self._supports_check_mode = True
 
-    def _configure_module(self, module_name, module_args):
+    def _configure_module(self, module_name, module_args, task_vars=dict()):
         '''
         Handles the loading and templating of the module code through the
         modify_module() function.
@@ -86,7 +86,7 @@ class ActionBase:
                                    "run 'git submodule update --init --recursive' to correct this problem." % (module_name))
 
         # insert shared code and arguments into the module
-        (module_data, module_style, module_shebang) = modify_module(module_path, module_args)
+        (module_data, module_style, module_shebang) = modify_module(module_path, module_args, task_vars=task_vars)
 
         return (module_style, module_shebang, module_data)
 
@@ -161,12 +161,12 @@ class ActionBase:
             if result['rc'] == 5:
                 output = 'Authentication failure.'
             elif result['rc'] == 255 and self._connection.transport in ('ssh',):
-                # FIXME: more utils.VERBOSITY
-                #if utils.VERBOSITY > 3:
-                #    output = 'SSH encountered an unknown error. The output was:\n%s' % (result['stdout']+result['stderr'])
-                #else:
-                #    output = 'SSH encountered an unknown error during the connection. We recommend you re-run the command using -vvvv, which will enable SSH debugging output to help diagnose the issue'
-                output = 'SSH encountered an unknown error. The output was:\n%s' % (result['stdout']+result['stderr'])
+
+                if self._connection_info.verbosity > 3:
+                    output = 'SSH encountered an unknown error. The output was:\n%s' % (result['stdout']+result['stderr'])
+                else:
+                    output = 'SSH encountered an unknown error during the connection. We recommend you re-run the command using -vvvv, which will enable SSH debugging output to help diagnose the issue'
+
             elif 'No space left on device' in result['stderr']:
                 output = result['stderr']
             else:
@@ -314,7 +314,7 @@ class ActionBase:
                 filtered_lines.write(line + '\n')
         return filtered_lines.getvalue()
 
-    def _execute_module(self, module_name=None, module_args=None, tmp=None, persist_files=False, delete_remote_tmp=True):
+    def _execute_module(self, module_name=None, module_args=None, tmp=None, task_vars=dict(), persist_files=False, delete_remote_tmp=True):
         '''
         Transfer and run a module along with its arguments.
         '''
@@ -338,7 +338,7 @@ class ActionBase:
 
         debug("in _execute_module (%s, %s)" % (module_name, module_args))
 
-        (module_style, shebang, module_data) = self._configure_module(module_name=module_name, module_args=module_args)
+        (module_style, shebang, module_data) = self._configure_module(module_name=module_name, module_args=module_args, task_vars=task_vars)
         if not shebang:
             raise AnsibleError("module is missing interpreter line")
 
@@ -462,7 +462,7 @@ class ActionBase:
             err = stderr
 
         debug("done with _low_level_execute_command() (%s)" % (cmd,))
-        if rc is not None:
-            return dict(rc=rc, stdout=out, stderr=err)
-        else:
-            return dict(stdout=out, stderr=err)
+        if rc is None:
+            rc = 0
+
+        return dict(rc=rc, stdout=out, stderr=err)

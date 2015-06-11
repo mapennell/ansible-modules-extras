@@ -45,6 +45,7 @@ class AdHocCLI(CLI):
             check_opts=True,
             runtask_opts=True,
             vault_opts=True,
+            fork_opts=True,
         )
 
         # options unique to ansible ad-hoc
@@ -60,7 +61,7 @@ class AdHocCLI(CLI):
             raise AnsibleOptionsError("Missing target hosts")
 
         self.display.verbosity = self.options.verbosity
-        self.validate_conflicts()
+        self.validate_conflicts(runas_opts=True, vault_opts=True)
 
         return True
 

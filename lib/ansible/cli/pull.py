@@ -21,12 +21,15 @@ import os
 import random
 import shutil
 import socket
+import sys
 
 from ansible import constants as C
 from ansible.errors import AnsibleError, AnsibleOptionsError
 from ansible.cli import CLI
+from ansible.plugins import module_loader
 from ansible.utils.display import Display
 from ansible.utils.vault import read_vault_file
+from ansible.utils.cmd_functions import run_cmd
 
 ########################################################
 
@@ -48,6 +51,7 @@ class PullCLI(CLI):
             usage='%prog <host-pattern> [options]',
             connect_opts=True,
             vault_opts=True,
+            runtask_opts=True,
         )
 
         # options unique to pull
@@ -66,7 +70,9 @@ class PullCLI(CLI):
             help='adds the hostkey for the repo url if not already added')
         self.parser.add_option('-m', '--module-name', dest='module_name', default=self.DEFAULT_REPO_TYPE,
             help='Repository module name, which ansible will use to check out the repo. Default is %s.' % self.DEFAULT_REPO_TYPE)
-
+        self.parser.add_option('--verify-commit', dest='verify', default=False, action='store_true',
+            help='verify GPG signature of checked out commit, if it fails abort running the playbook.'
+                 ' This needs the corresponding VCS module to support such an operation')
 
         self.options, self.args = self.parser.parse_args()
 
@@ -87,7 +93,7 @@ class PullCLI(CLI):
             raise AnsibleOptionsError("Unsuported repo module %s, choices are %s" % (self.options.module_name, ','.join(self.SUPPORTED_REPO_MODULES)))
 
         self.display.verbosity = self.options.verbosity
-        self.validate_conflicts()
+        self.validate_conflicts(vault_opts=True)
 
     def run(self):
         ''' use Runner lib to do SSH things '''
@@ -100,7 +106,7 @@ class PullCLI(CLI):
         # Build Checkout command
         # Now construct the ansible command
         limit_opts = 'localhost:%s:127.0.0.1' % socket.getfqdn()
-        base_opts = '-c local --limit "%s"' % limit_opts
+        base_opts = '-c local "%s"' % limit_opts
         if self.options.verbosity > 0:
             base_opts += ' -%s' % ''.join([ "v" for x in range(0, self.options.verbosity) ])
 
@@ -120,15 +126,18 @@ class PullCLI(CLI):
             if self.options.accept_host_key:
                 repo_opts += ' accept_hostkey=yes'
 
-            if self.options.key_file:
-                repo_opts += ' key_file=%s' % options.key_file
+            if self.options.private_key_file:
+                repo_opts += ' key_file=%s' % self.options.private_key_file
 
-        path = utils.plugins.module_finder.find_plugin(options.module_name)
+            if self.options.verify:
+                repo_opts += ' verify_commit=yes'
+
+        path = module_loader.find_plugin(self.options.module_name)
         if path is None:
-            raise AnsibleOptionsError(("module '%s' not found.\n" % options.module_name))
+            raise AnsibleOptionsError(("module '%s' not found.\n" % self.options.module_name))
 
-        bin_path = os.path.dirname(os.path.abspath(__file__))
-        cmd = '%s/ansible localhost -i "%s" %s -m %s -a "%s"' % (
+        bin_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+        cmd = '%s/ansible -i "%s" %s -m %s -a "%s"' % (
             bin_path, inv_opts, base_opts, self.options.module_name, repo_opts
         )
 
@@ -141,7 +150,7 @@ class PullCLI(CLI):
             time.sleep(self.options.sleep);
 
         # RUN the Checkout command
-        rc, out, err = cmd_functions.run_cmd(cmd, live=True)
+        rc, out, err = run_cmd(cmd, live=True)
 
         if rc != 0:
             if self.options.force:
@@ -173,7 +182,7 @@ class PullCLI(CLI):
         os.chdir(self.options.dest)
 
         # RUN THE PLAYBOOK COMMAND
-        rc, out, err = cmd_functions.run_cmd(cmd, live=True)
+        rc, out, err = run_cmd(cmd, live=True)
 
         if self.options.purge:
             os.chdir('/')

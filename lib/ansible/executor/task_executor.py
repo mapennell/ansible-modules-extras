@@ -48,6 +48,10 @@ class TaskExecutor:
     class.
     '''
 
+    # Modules that we optimize by squashing loop items into a single call to
+    # the module
+    SQUASH_ACTIONS = frozenset(('apt', 'yum', 'pkgng', 'zypper', 'dnf'))
+
     def __init__(self, host, task, job_vars, connection_info, new_stdin, loader, shared_loader_obj):
         self._host              = host
         self._task              = task
@@ -176,7 +180,7 @@ class TaskExecutor:
         (typically package management modules).
         '''
 
-        if len(items) > 0 and self._task.action in ('apt', 'yum', 'pkgng', 'zypper'):
+        if len(items) > 0 and self._task.action in self.SQUASH_ACTIONS:
             final_items = []
             for item in items:
                 variables['item'] = item
@@ -210,7 +214,6 @@ class TaskExecutor:
         # get the connection and the handler for this execution
         self._connection = self._get_connection(variables)
         self._connection.set_host_overrides(host=self._host)
-        self._connection._connect()
 
         self._handler = self._get_action_handler(connection=self._connection, templar=templar)
 

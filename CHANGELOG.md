@@ -11,12 +11,15 @@ Major Changes:
 Deprecated Modules (new ones in parens):
   * ec2_ami_search (ec2_ami_find)
   * quantum_network (os_network)
+  * glance_image
   * nova_compute   (os_server)
 
 New Modules:
-  * find
-  * ec2_ami_find
-  * ec2_win_password
+  * amazon: ec2_ami_find
+  * amazon: elasticache_subnet_group
+  * amazon: ec2_win_password
+  * amazon: iam
+  * amazon: iam_policy
   * circonus_annotation
   * consul
   * consul_acl
@@ -29,13 +32,19 @@ New Modules:
   * cloudstack: cs_iso
   * cloudstack: cs_instance
   * cloudstack: cs_instancegroup
+  * cloudstack: cs_network
   * cloudstack: cs_portforward
   * cloudstack: cs_project
   * cloudstack: cs_sshkeypair
   * cloudstack: cs_securitygroup
   * cloudstack: cs_securitygroup_rule
   * cloudstack: cs_vmsnapshot
+  * datadog_monitor
+  * expect
+  * find
   * maven_artifact
+  * openstack: os_client_config
+  * openstack: os_image
   * openstack: os_network
   * openstack: os_server
   * openstack: os_server_actions
@@ -43,23 +52,30 @@ New Modules:
   * openstack: os_server_volume
   * openstack: os_subnet
   * openstack: os_volume
+  * pear
   * proxmox
   * proxmox_template
+  * puppet
   * pushover
   * pushbullet
   * rabbitmq_binding
   * rabbitmq_exchange
   * rabbitmq_queue
-  * zabbix_host
-  * zabbix_hostmacro
-  * zabbix_screen
   * vertica_configuration
   * vertica_facts
   * vertica_role
   * vertica_schema
   * vertica_user
   * vmware_datacenter
+  * webfaction_app
+  * webfaction_db
+  * webfaction_domain
+  * webfaction_mailbox
+  * webfaction_site
   * win_environment
+  * zabbix_host
+  * zabbix_hostmacro
+  * zabbix_screen
 
 New Inventory scripts:
   * cloudstack

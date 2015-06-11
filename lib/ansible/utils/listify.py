@@ -19,48 +19,26 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-from six import iteritems, string_types
-
-import re
 
 from ansible.template import Templar
 from ansible.template.safe_eval import safe_eval
 
 __all__ = ['listify_lookup_plugin_terms']
 
-LOOKUP_REGEX = re.compile(r'lookup\s*\(')
-
+#FIXME: probably just move this into lookup plugin base class
 def listify_lookup_plugin_terms(terms, variables, loader):
 
     if isinstance(terms, basestring):
-        # someone did:
-        #    with_items: alist
-        # OR
-        #    with_items: {{ alist }}
-
         stripped = terms.strip()
         templar = Templar(loader=loader, variables=variables)
-        if not (stripped.startswith('{') or stripped.startswith('[')) and not stripped.startswith("/") and not stripped.startswith('set([') and not LOOKUP_REGEX.search(terms):
-            # if not already a list, get ready to evaluate with Jinja2
-            # not sure why the "/" is in above code :)
-            try:
-                new_terms = templar.template("{{ %s }}" % terms)
-                if isinstance(new_terms, basestring) and "{{" in new_terms:
-                    pass
-                else:
-                    terms = new_terms
-            except:
-                pass
-        else:
-            terms = templar.template(terms)
 
-        if '{' in terms or '[' in terms:
-            # Jinja2 already evaluated a variable to a list.
-            # Jinja2-ified list needs to be converted back to a real type
-            return safe_eval(terms)
+        #FIXME: warn/deprecation on bare vars in with_ so we can eventually remove fail on undefined override
+        terms = templar.template(terms, convert_bare=True, fail_on_undefined=False)
 
-        if isinstance(terms, basestring):
+        #TODO: check if this is needed as template should also return correct type already
+        terms = safe_eval(terms)
+
+        if isinstance(terms, basestring) or not isinstance(terms, list) and not isinstance(terms, set):
             terms = [ terms ]
 
     return terms
-

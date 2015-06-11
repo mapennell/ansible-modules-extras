@@ -36,6 +36,7 @@ from ansible import constants as C
 from ansible.errors import AnsibleError, AnsibleConnectionFailure, AnsibleFileNotFound
 from ansible.plugins.connections import ConnectionBase
 
+
 class Connection(ConnectionBase):
     ''' ssh based connections '''
 
@@ -44,6 +45,9 @@ class Connection(ConnectionBase):
         self._common_args = []
         self.HASHED_KEY_MAGIC = "|1|"
         self._has_pipelining = True
+
+        # FIXME: make this work, should be set from connection info
+        self._ipv6 = False
 
         # FIXME: move the lockfile locations to ActionBase?
         #fcntl.lockf(self.runner.process_lockfile, fcntl.LOCK_EX)
@@ -95,11 +99,8 @@ class Connection(ConnectionBase):
 
         if self._connection_info.port is not None:
             self._common_args += ("-o", "Port={0}".format(self._connection_info.port))
-        # FIXME: need to get this from connection info
-        #if self.private_key_file is not None:
-        #    self._common_args += ("-o", "IdentityFile=\"{0}\"".format(os.path.expanduser(self.private_key_file)))
-        #elif self.runner.private_key_file is not None:
-        #    self._common_args += ("-o", "IdentityFile=\"{0}\"".format(os.path.expanduser(self.runner.private_key_file)))
+        if self._connection_info.private_key_file is not None:
+            self._common_args += ("-o", "IdentityFile=\"{0}\"".format(os.path.expanduser(self._connection_info.private_key_file)))
         if self._connection_info.password:
             self._common_args += ("-o", "GSSAPIAuthentication=no",
                                  "-o", "PubkeyAuthentication=no")
@@ -272,6 +273,10 @@ class Connection(ConnectionBase):
     def exec_command(self, cmd, tmp_path, executable='/bin/sh', in_data=None):
         ''' run a command on the remote host '''
 
+        super(Connection, self).exec_command(cmd, tmp_path, executable=executable, in_data=in_data)
+
+        host = self._connection_info.remote_addr
+
         ssh_cmd = self._password_cmd()
         ssh_cmd += ("ssh", "-C")
         if not in_data:
@@ -285,16 +290,14 @@ class Connection(ConnectionBase):
             ssh_cmd.append("-q")
         ssh_cmd += self._common_args
 
-        # FIXME: ipv6 stuff needs to be figured out. It's in the connection info, however
-        #        not sure if it's all working yet so this remains commented out
-        #if self._ipv6:
-        #    ssh_cmd += ['-6']
-        ssh_cmd.append(self._connection_info.remote_addr)
+        if self._ipv6:
+            ssh_cmd += ['-6']
+        ssh_cmd.append(host)
 
         ssh_cmd.append(cmd)
-        self._display.vvv("EXEC {0}".format(' '.join(ssh_cmd)), host=self._connection_info.remote_addr)
+        self._display.vvv("EXEC {0}".format(' '.join(ssh_cmd)), host=host)
 
-        not_in_host_file = self.not_in_host_file(self._connection_info.remote_addr)
+        not_in_host_file = self.not_in_host_file(host)
 
         # FIXME: move the locations of these lock files, same as init above
         #if C.HOST_KEY_CHECKING and not_in_host_file:
@@ -392,18 +395,18 @@ class Connection(ConnectionBase):
 
     def put_file(self, in_path, out_path):
         ''' transfer a file from local to remote '''
-        self._display.vvv("PUT {0} TO {1}".format(in_path, out_path), host=self._connection_info.remote_addr)
-        if not os.path.exists(in_path):
-            raise AnsibleFileNotFound("file or module does not exist: {0}".format(in_path))
-        cmd = self._password_cmd()
+
+        super(Connection, self).put_file(in_path, out_path)
 
         # FIXME: make a function, used in all 3 methods EXEC/PUT/FETCH
         host = self._connection_info.remote_addr
+        if self._ipv6:
+            host = '[%s]' % host
 
-        # FIXME: ipv6 stuff needs to be figured out. It's in the connection info, however
-        #        not sure if it's all working yet so this remains commented out
-        #if self._ipv6:
-        #    host = '[%s]' % host
+        self._display.vvv("PUT {0} TO {1}".format(in_path, out_path), host=host)
+        if not os.path.exists(in_path):
+            raise AnsibleFileNotFound("file or module does not exist: {0}".format(in_path))
+        cmd = self._password_cmd()
 
         if C.DEFAULT_SCP_IF_SSH:
             cmd.append('scp')
@@ -427,16 +430,17 @@ class Connection(ConnectionBase):
 
     def fetch_file(self, in_path, out_path):
         ''' fetch a file from remote to local '''
-        self._display.vvv("FETCH {0} TO {1}".format(in_path, out_path), host=self._connection_info.remote_addr)
-        cmd = self._password_cmd()
+
+        super(Connection, self).fetch_file(in_path, out_path)
 
         # FIXME: make a function, used in all 3 methods EXEC/PUT/FETCH
         host = self._connection_info.remote_addr
+        if self._ipv6:
+            host = '[%s]' % host
 
-        # FIXME: ipv6 stuff needs to be figured out. It's in the connection info, however
-        #        not sure if it's all working yet so this remains commented out
-        #if self._ipv6:
-        #    host = '[%s]' % self._connection_info.remote_addr
+        self._display.vvv("FETCH {0} TO {1}".format(in_path, out_path), host=host)
+        cmd = self._password_cmd()
+
 
         if C.DEFAULT_SCP_IF_SSH:
             cmd.append('scp')
@@ -458,5 +462,16 @@ class Connection(ConnectionBase):
 
     def close(self):
         ''' not applicable since we're executing openssh binaries '''
-        self._connected = False
+
+        if self._connected:
+
+            if 'ControlMaster' in self._common_args:
+                cmd = ['ssh','-O','stop']
+                cmd.extend(self._common_args)
+                cmd.append(self._connection_info.remote_addr)
+
+                p = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = p.communicate()
+
+            self._connected = False
 
