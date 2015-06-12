@@ -183,6 +183,7 @@ def main():
     host = module.params['host']
     username = module.params['username']
     password = module.params['password']
+    partition = module.params['partition']
     state = module.params['state']
     write_config = module.params['write_config']
     slb_virtual = module.params['virtual_server']
@@ -197,6 +198,7 @@ def main():
 
     axapi_base_url = 'https://%s/services/rest/V2.1/?format=json' % host
     session_url = axapi_authenticate(module, axapi_base_url, username, password)
+    axapi_partition(module, session_url, partition)
 
     slb_virtual_data = axapi_call(module, session_url + '&method=slb.virtual_server.search', json.dumps({'name': slb_virtual}))
     slb_virtual_exists = not axapi_failure(slb_virtual_data)
