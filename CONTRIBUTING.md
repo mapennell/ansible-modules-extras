@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Contributing to ansible-modules-extras
 ======================================
 
@@ -19,19 +20,43 @@ Ansible welcomes new modules. Please be certain that you've read the [module dev
 Each new module requires two current module owners to approve a new module for inclusion.  The Ansible community reviews new modules as often as possible, but please be patient; there are a lot of new module submissions in the pipeline, and it takes time to evaluate a new module for its adherence to module standards.
 
 Once your module is accepted, you become responsible for maintenance of that module, which means responding to pull requests and issues in a reasonably timely manner. 
+=======
+Welcome To Ansible GitHub
+=========================
+
+Hi! Nice to see you here!
+>>>>>>> bfdeaf8fba89e8aaf26c181dd2fcebac3093d3a2
 
 If you'd like to ask a question
 ===============================
 
 Please see [this web page ](http://docs.ansible.com/community.html) for community information, which includes pointers on how to ask questions on the [mailing lists](http://docs.ansible.com/community.html#mailing-list-information) and IRC.  
 
+<<<<<<< HEAD
 The Github issue tracker is not the best place for questions for various reasons, but both IRC and the mailing list are very helpful places for those things, and that page has the pointers to those.
+=======
+The github issue tracker is not the best place for questions for various reasons, but both IRC and the mailing list are very helpful places for those things, and that page has the pointers to those.
+
+If you'd like to contribute code
+================================
+
+Please see [this web page](http://docs.ansible.com/community.html) for information about the contribution process.  Important license agreement information is also included on that page.
+>>>>>>> bfdeaf8fba89e8aaf26c181dd2fcebac3093d3a2
 
 If you'd like to file a bug
 ===========================
 
+<<<<<<< HEAD
 Read the community page above, but in particular, make sure you copy [this issue template](https://github.com/ansible/ansible/blob/devel/ISSUE_TEMPLATE.md) into your ticket description.  We have a friendly neighborhood bot that will remind you if you forget :)  This template helps us organize tickets faster and prevents asking some repeated questions, so it's very helpful to us and we appreciate your help with it.
+=======
+I'd also read the community page above, but in particular, make sure you copy [this issue template](https://github.com/ansible/ansible/blob/devel/ISSUE_TEMPLATE.md) into your ticket description.  We have a friendly neighborhood bot that will remind you if you forget :)  This template helps us organize tickets faster and prevents asking some repeated questions, so it's very helpful to us and we appreciate your help with it.
+>>>>>>> bfdeaf8fba89e8aaf26c181dd2fcebac3093d3a2
 
 Also please make sure you are testing on the latest released version of Ansible or the development branch.
 
 Thanks!
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> bfdeaf8fba89e8aaf26c181dd2fcebac3093d3a2
