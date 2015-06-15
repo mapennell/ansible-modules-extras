@@ -185,6 +185,7 @@ def main():
     host = module.params['host']
     username = module.params['username']
     password = module.params['password']
+    partition = module.params['partition']
     state = module.params['state']
     write_config = module.params['write_config']
     slb_service_group = module.params['service_group']
@@ -226,6 +227,7 @@ def main():
 
     # first we authenticate to get a session id
     session_url = axapi_authenticate(module, axapi_base_url, username, password)
+    axapi_partition(module, session_url, partition)
 
     # then we check to see if the specified group exists
     slb_result = axapi_call(module, session_url + '&method=slb.service_group.search', json.dumps({'name': slb_service_group}))
