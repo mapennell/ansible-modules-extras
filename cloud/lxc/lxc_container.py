@@ -26,7 +26,7 @@ short_description: Manage LXC Containers
 version_added: 1.8.0
 description:
   - Management of LXC containers
-author: '"Kevin Carter (@cloudnull)" <kevin.carter@rackspace.com>'
+author: "Kevin Carter (@cloudnull)"
 options:
     name:
         description:
@@ -1064,6 +1064,9 @@ class LxcContainerManagement(object):
             if self._get_state() != 'stopped':
                 self.container.stop()
                 self.state_change = True
+
+            # Run container startup
+            self._container_startup()
 
             # Check if the container needs to have an archive created.
             self._check_archive()
